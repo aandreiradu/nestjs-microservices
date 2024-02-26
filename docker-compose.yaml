@@ -1,36 +1,61 @@
 services:
-  credit-bureau:
+  loan-quotes:
     build:
       context: .
       dockerfile: ./apps/credit-bureau/Dockerfile
       target: development
-    command: npm run start:dev
+    command: npm run start:dev credit-bureau
     env_file:
       - ./apps/credit-bureau/.env
     depends_on:
-      - mongodb
+      - mongodb-primary
+      - mongodb-secondary
+      - mongodb-arbiter
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
     ports:
       - '3000:3000'
-  mongo_db:
-    image: mongo:latest
-    container_name: mongo_db
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
+
+  mongodb-primary:
+    image: docker.io/bitnami/mongodb:4.4.14
     environment:
-      - MONGO_INITDB_DATABASE=loan_quotes
       - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=password123
-    networks:
-      - mongo_network
+      - MONGO_INITDB_ROOT_PASSWORD=password123 
+      - MONGODB_ROOT_PASSWORD=password123
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-primary
+      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_REPLICA_SET_KEY=replicasetkey123
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - 'mongodb_master_data:/bitnami/mongodb'
+    ports:
+      - '27017:27017'
+
+  mongodb-secondary:
+    image: docker.io/bitnami/mongodb:4.4.14
+    depends_on:
+      - mongodb-primary
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-secondary
+      - MONGODB_REPLICA_SET_MODE=secondary
+      - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
+      - MONGODB_INITIAL_PRIMARY_ROOT_USERNAME=root
+      - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=password123
+      - MONGODB_REPLICA_SET_KEY=replicasetkey123
+
+  mongodb-arbiter:
+    image: docker.io/bitnami/mongodb:4.4.14
+    depends_on:
+      - mongodb-primary
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-arbiter
+      - MONGODB_REPLICA_SET_MODE=arbiter
+      - MONGODB_INITIAL_PRIMARY_ROOT_USERNAME=root
+      - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
+      - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=password123
+      - MONGODB_REPLICA_SET_KEY=replicasetkey123
 
 volumes:
-  mongodb_data:
-
-networks:
-  mongo_network:
-    driver: bridge
+  mongodb_master_data:
+    driver: local

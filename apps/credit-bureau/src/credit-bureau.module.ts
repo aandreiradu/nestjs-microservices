@@ -14,6 +14,7 @@ import { CreditBureau, CreditBureauSchema } from './schemas/cb.schemas';
       isGlobal: true,
       validationSchema: Joi.object({
         MONGODB_URI: Joi.string().required(),
+        PORT: Joi.number().required(),
       }),
       envFilePath: './apps/credit-bureau/.env',
     }),
