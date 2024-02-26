@@ -6,7 +6,11 @@ import { MongooseModule } from '@nestjs/mongoose';
   imports: [
     MongooseModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
+        uri: 'mongodb://mongo_db:27017/loan_quotes',
+        auth: {
+          username: 'root',
+          password: 'password123',
+        },
       }),
       inject: [ConfigService],
     }),
