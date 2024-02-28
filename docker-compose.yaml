@@ -2,11 +2,11 @@ services:
   loan-quotes:
     build:
       context: .
-      dockerfile: ./apps/credit-bureau/Dockerfile
+      dockerfile: ./apps/loan-quotes/Dockerfile
       target: development
-    command: npm run start:dev credit-bureau
+    command: npm run start:dev loan-quotes
     env_file:
-      - ./apps/credit-bureau/.env
+      - ./apps/loan-quotes/.env
     depends_on:
       - mongodb-primary
       - mongodb-secondary

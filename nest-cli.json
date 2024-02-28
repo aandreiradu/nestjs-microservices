@@ -1,14 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/credit-bureau/src",
+  "sourceRoot": "apps/loan-quotes/src",
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "tsConfigPath": "apps/credit-bureau/tsconfig.app.json"
+    "tsConfigPath": "apps/loan-quotes/tsconfig.app.json"
   },
   "monorepo": true,
-  "root": "apps/credit-bureau",
+  "root": "apps/loan-quotes",
   "projects": {
     "credit-bureau": {
       "type": "application",
@@ -53,6 +53,15 @@
       "sourceRoot": "libs/common/src",
       "compilerOptions": {
         "tsConfigPath": "libs/common/tsconfig.lib.json"
+      }
+    },
+    "loan-quotes": {
+      "type": "application",
+      "root": "apps/loan-quotes",
+      "entryFile": "main",
+      "sourceRoot": "apps/loan-quotes/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/loan-quotes/tsconfig.app.json"
       }
     }
   }
