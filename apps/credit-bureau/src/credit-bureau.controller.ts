@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Inject,
+  Logger,
   Param,
   Post,
   UsePipes,
@@ -17,13 +18,18 @@ import {
   Payload,
   RmqContext,
 } from '@nestjs/microservices';
-import { QuoteDTO } from 'apps/loan-quotes/src/loan-quotes.controller';
 import { RmqService } from '@app/common';
 import { CREDIT_BUREAU_RESPONSE_SERVICE } from 'apps/loan-quotes/src/constants/services';
 import { lastValueFrom } from 'rxjs';
 
+type CreditBureauRequestType = {
+  SSN: string;
+  correlationId: string;
+};
 @Controller()
 export class CreditBureauController {
+  private readonly logger: Logger = new Logger(CreditBureauController.name);
+
   constructor(
     @Inject(CREDIT_BUREAU_RESPONSE_SERVICE)
     private creditBureauClient: ClientProxy,
@@ -37,33 +43,45 @@ export class CreditBureauController {
     return this.creditBureauService.createCBRecord(dto);
   }
 
-  // @Get(':SSN')
   async getCreditBureauResult(@Param('SSN') ssn: string) {
     return this.creditBureauService.getCBResult(ssn);
   }
 
   @EventPattern('credit.bureau.request')
   async handleCreditBureauRequest(
-    @Payload() data: QuoteDTO & { correlationId: string },
+    @Payload() data: any,
     @Ctx() context: RmqContext,
   ) {
-    console.log('credit.bureau.request consumer received the request');
+    try {
+      const parsedData = JSON.parse(data) as unknown as CreditBureauRequestType;
+      const { SSN, correlationId } = parsedData ?? {};
 
-    const customerFinancialHistory = await this.getCreditBureauResult(data.SSN);
-    console.log('customerFinancialHistory', customerFinancialHistory);
+      if (!SSN) {
+        this.logger.error(`Missing SSN for correlationId ${correlationId}`);
+        this.rmqService.ack(context);
+        return;
+      }
 
-    await lastValueFrom(
-      this.creditBureauClient.emit(
-        'credit.bureau.response',
-        JSON.stringify({
-          ...data,
-          customerFinancialHistory: customerFinancialHistory ?? null,
-        }),
-      ),
-    );
+      const customerFinancialHistory = await this.getCreditBureauResult(SSN);
+      await lastValueFrom(
+        this.creditBureauClient.emit(
+          'credit.bureau.response',
+          JSON.stringify({
+            ...parsedData,
+            customerFinancialHistory: customerFinancialHistory ?? null,
+          }),
+        ),
+      );
 
-    console.log('published to credit.bureau.response');
-    this.rmqService.ack(context);
-    console.log('acknoledged credit.bureau.request');
+      this.logger.log(`Successfully processed correlationId ${correlationId}`);
+      this.rmqService.ack(context);
+    } catch (error) {
+      this.logger.error(
+        `Failed to process correlationId ${JSON.stringify(data)}`,
+      );
+      this.logger.error(error);
+
+      return null;
+    }
   }
 }

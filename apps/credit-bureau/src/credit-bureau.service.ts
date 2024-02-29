@@ -13,6 +13,21 @@ export class CreditBureauService {
   }
 
   async getCBResult(SSN: string) {
-    return this.creditBureauRepository.findOne({ SSN });
+    try {
+      const customerFinancialHistory =
+        await this.creditBureauRepository.findOne({ SSN });
+
+      return customerFinancialHistory;
+    } catch (error) {
+      if (error instanceof Error) {
+        const { message } = error;
+
+        if (message === 'Document not found.') {
+          return null;
+        }
+
+        throw error;
+      }
+    }
   }
 }

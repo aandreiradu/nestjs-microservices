@@ -7,16 +7,15 @@ import { CreditBureau, CreditBureauSchema } from './schemas/cb.schemas';
 import { DatabaseModule, RmqModule } from '@app/common';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
-import {
-  CREDIT_BUREAU_REQUEST_SERVICE,
-  CREDIT_BUREAU_RESPONSE_SERVICE,
-} from 'apps/loan-quotes/src/constants/services';
+import { CREDIT_BUREAU_RESPONSE_SERVICE } from 'apps/loan-quotes/src/constants/services';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
         MONGODB_URI: Joi.string().required(),
+        RABBIT_MQ_CREDIT_BUREAU_REQUEST_QUEUE: Joi.string().required(),
+        RABBIT_MQ_CREDIT_BUREAU_RESPONSE_QUEUE: Joi.string().required(),
       }),
       envFilePath: './apps/credit-bureau/.env',
     }),
@@ -24,7 +23,6 @@ import {
       { name: CreditBureau.name, schema: CreditBureauSchema },
     ]),
     DatabaseModule,
-    RmqModule.register({ name: CREDIT_BUREAU_REQUEST_SERVICE }),
     RmqModule.register({ name: CREDIT_BUREAU_RESPONSE_SERVICE }),
   ],
   controllers: [CreditBureauController],
