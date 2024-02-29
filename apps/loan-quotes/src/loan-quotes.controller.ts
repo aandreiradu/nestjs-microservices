@@ -1,4 +1,11 @@
-import { Body, Controller, Inject, Logger, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Inject,
+  InternalServerErrorException,
+  Logger,
+  Post,
+} from '@nestjs/common';
 import { LoanQuotesService } from './loan-quotes.service';
 import {
   ClientProxy,
@@ -29,34 +36,39 @@ export class LoanQuotesController {
 
   @Post()
   async quoteSimulation(@Body() dto: QuoteDTO) {
-    const response = await lastValueFrom(
-      this.loanSimulationClient.emit(
-        'loan.simulation.request',
-        JSON.stringify({ ...dto }),
-      ),
-    );
-    console.log('published to loan.simulation.request');
+    try {
+      await lastValueFrom(
+        this.loanSimulationClient.emit(
+          'loan.simulation.request',
+          JSON.stringify({ ...dto }),
+        ),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to publish to Simulation Requests Queue`);
+      this.logger.error(error);
 
-    console.log('response', response);
+      throw new InternalServerErrorException();
+    }
   }
 
   @EventPattern('loan.simulation.request')
   async handleLoanSimulationRequest(
-    @Payload() data: QuoteDTO,
+    @Payload() data: any,
     @Ctx() context: RmqContext,
   ) {
-    const simulationCorrelationId = uuidv4();
-    console.log('generated this correlationId', simulationCorrelationId);
-
-    await this.loanQuotesService.requestCreditBureauInformations(
-      data,
-      simulationCorrelationId,
+    const parsedSimulationRequest = JSON.parse(data) as unknown as QuoteDTO;
+    const correlationId = uuidv4();
+    this.logger.log(
+      `[loan.simulation.request.consumer] generated this correlationId ${correlationId}`,
     );
 
-    console.log('invoked the requestCreditBureauInformations');
+    await this.loanQuotesService.requestCreditBureauInformations({
+      SSN: parsedSimulationRequest.SSN,
+      amount: parsedSimulationRequest.amount,
+      correlationId,
+    });
 
     this.rmqService.ack(context);
-    console.log('acknoledged the message');
   }
 
   @EventPattern('credit.bureau.response')
@@ -64,8 +76,7 @@ export class LoanQuotesController {
     @Payload() data: QuoteDTO & CreditBureau,
     @Ctx() context: RmqContext,
   ) {
-    console.log('credit.bureau.response consumer received data', data);
-
+    this.logger.log('credit.bureau.response received data', data);
     this.rmqService.ack(context);
   }
 }

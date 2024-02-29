@@ -7,7 +7,6 @@ import { DatabaseModule } from '@app/common';
 import { RmqModule } from '@app/common/rmq/rmq.module';
 import {
   CREDIT_BUREAU_REQUEST_SERVICE,
-  CREDIT_BUREAU_RESPONSE_SERVICE,
   LOAN_REQUEST_SERVICE,
 } from './constants/services';
 
@@ -24,7 +23,6 @@ import {
     DatabaseModule,
     RmqModule.register({ name: LOAN_REQUEST_SERVICE }),
     RmqModule.register({ name: CREDIT_BUREAU_REQUEST_SERVICE }),
-    RmqModule.register({ name: CREDIT_BUREAU_RESPONSE_SERVICE }),
   ],
   controllers: [LoanQuotesController],
   providers: [LoanQuotesService],
