@@ -31,6 +31,45 @@ services:
       - /usr/src/app/node_modules
     ports:
       - '3001:3001'
+  bank-a:
+    build: 
+      context: .
+      dockerfile: ./apps/bank-a/Dockerfile
+      target: development
+    command: npm run start:dev bank-a
+    depends_on:
+      - mongodb-primary
+      - mongodb-secondary
+      - mongodb-arbiter
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+  bank-b:
+    build: 
+      context: .
+      dockerfile: ./apps/bank-b/Dockerfile
+      target: development
+    command: npm run start:dev bank-b
+    depends_on:
+      - mongodb-primary
+      - mongodb-secondary
+      - mongodb-arbiter
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+  bank-c:
+    build: 
+      context: .
+      dockerfile: ./apps/bank-c/Dockerfile
+      target: development
+    command: npm run start:dev bank-c
+    depends_on:
+      - mongodb-primary
+      - mongodb-secondary
+      - mongodb-arbiter
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
 
   rabbitmq:
     image: "rabbitmq:3-management"
