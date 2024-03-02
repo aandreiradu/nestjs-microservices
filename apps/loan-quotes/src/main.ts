@@ -3,6 +3,7 @@ import { LoanQuotesModule } from './loan-quotes.module';
 import { ConfigService } from '@nestjs/config';
 import { RmqService } from '@app/common';
 import {
+  BANKS_SIMULATION_RESPONSES,
   CREDIT_BUREAU_RESPONSE_SERVICE,
   LOAN_REQUEST_SERVICE,
 } from './constants/services';
@@ -17,8 +18,9 @@ async function bootstrap() {
   app.connectMicroservice(
     rmqService.getOptions(CREDIT_BUREAU_RESPONSE_SERVICE),
   );
-  await app.startAllMicroservices();
+  app.connectMicroservice(rmqService.getOptions(BANKS_SIMULATION_RESPONSES));
 
+  await app.startAllMicroservices();
   await app.listen(PORT);
   console.log(`LoanQuotes started on port ${PORT}`);
 }
