@@ -63,6 +63,7 @@ export class CreditBureauController {
       }
 
       const customerFinancialHistory = await this.getCreditBureauResult(SSN);
+
       await lastValueFrom(
         this.creditBureauClient.emit(
           'credit.bureau.response',

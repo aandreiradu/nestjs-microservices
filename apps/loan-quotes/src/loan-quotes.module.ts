@@ -6,8 +6,12 @@ import * as Joi from 'joi';
 import { DatabaseModule } from '@app/common';
 import { RmqModule } from '@app/common/rmq/rmq.module';
 import {
+  BANKS_SIMULATION_RESPONSES,
   CREDIT_BUREAU_REQUEST_SERVICE,
   LOAN_REQUEST_SERVICE,
+  LOAN_SIM_REQ_BRD,
+  LOAN_SIM_REQ_BT,
+  LOAN_SIM_REQ_ING,
 } from './constants/services';
 
 @Module({
@@ -23,6 +27,10 @@ import {
     DatabaseModule,
     RmqModule.register({ name: LOAN_REQUEST_SERVICE }),
     RmqModule.register({ name: CREDIT_BUREAU_REQUEST_SERVICE }),
+    RmqModule.register({ name: LOAN_SIM_REQ_BRD }),
+    RmqModule.register({ name: LOAN_SIM_REQ_BT }),
+    RmqModule.register({ name: LOAN_SIM_REQ_ING }),
+    RmqModule.register({ name: BANKS_SIMULATION_RESPONSES }),
   ],
   controllers: [LoanQuotesController],
   providers: [LoanQuotesService],

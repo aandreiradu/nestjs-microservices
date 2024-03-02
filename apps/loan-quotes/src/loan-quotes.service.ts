@@ -9,8 +9,18 @@ import { CREDIT_BUREAU_REQUEST_SERVICE } from 'apps/loan-quotes/src/constants/se
 import { lastValueFrom } from 'rxjs';
 import { QuoteDTO } from './loan-quotes.controller';
 
-interface CreditBureauDTO extends QuoteDTO {
+export interface CreditBureauDTO extends QuoteDTO {
   correlationId: string;
+}
+
+export interface CreditBureauResponse {
+  correlationId: string;
+  customerFinancialHistory: {
+    _id: string;
+    SSN: string;
+    fullName: string;
+    creditScore: number;
+  } | null;
 }
 
 @Injectable()
