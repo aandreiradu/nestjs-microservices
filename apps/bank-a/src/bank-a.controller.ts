@@ -49,8 +49,11 @@ export class BankAController {
         this.simResultsClient.emit(
           'sim.results.queue',
           JSON.stringify({
-            data,
-            simulationResponse,
+            correlationId: parsedSimulationRequest.correlationId,
+            simulationResults: {
+              ...simulationResponse,
+              bankName: 'Bank A',
+            },
           }),
         ),
       );

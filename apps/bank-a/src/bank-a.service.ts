@@ -14,6 +14,7 @@ export interface SimulationResponse {
   amount: number;
   period: number;
   message: string;
+  interestRate?: number;
 }
 @Injectable()
 export class BankAService {
@@ -41,6 +42,7 @@ export class BankAService {
           return resolve({
             amount: dto.amount,
             period: 6,
+            interestRate: 5,
             message: `Simulation succeeded`,
           });
         }, 5000);
@@ -49,6 +51,7 @@ export class BankAService {
           return resolve({
             amount: dto.amount,
             period: 12,
+            interestRate: 7,
             message: `Simulation succeeded`,
           });
         }, 10000);
