@@ -13,6 +13,7 @@ import {
   LOAN_SIM_REQ_BT,
   LOAN_SIM_REQ_ING,
 } from './constants/services';
+import { ReplyService } from '@app/common/rmq/replyService';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import {
     RmqModule.register({ name: LOAN_SIM_REQ_BT }),
     RmqModule.register({ name: LOAN_SIM_REQ_ING }),
     RmqModule.register({ name: BANKS_SIMULATION_RESPONSES }),
+    ReplyService,
   ],
   controllers: [LoanQuotesController],
   providers: [LoanQuotesService],
