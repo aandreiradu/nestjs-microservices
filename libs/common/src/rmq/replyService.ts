@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-type SimulationResults = {
+type SimulationResult = {
   bankName: string;
   amount: number;
   period: number;
@@ -10,12 +10,14 @@ type SimulationResults = {
 };
 
 interface PendingSimulation {
-  expireTime?: number;
-  exceptedResponses: number;
-  SSN?: string;
-  resolve?: any;
-  reject?: any;
-  simulationResults: SimulationResults[];
+  expireTime: number;
+  exceptedResults: number;
+  receivedResults: number;
+  isExpired: boolean;
+  SSN: string;
+  resolve: any;
+  reject: any;
+  simulationResults: SimulationResult[];
 }
 
 @Injectable()
@@ -27,15 +29,16 @@ export class ReplyService {
 
   async waitForReply(correlationId: string, SSN: string): Promise<any> {
     const expireAt = this.getExpireTime();
-    console.log(`CID expires at ${expireAt}`);
 
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(correlationId, {
         resolve,
         reject,
         SSN,
+        isExpired: false,
         expireTime: expireAt,
-        exceptedResponses: 2,
+        exceptedResults: 3,
+        receivedResults: 0,
         simulationResults: [],
       });
     });
@@ -47,11 +50,10 @@ export class ReplyService {
     );
     const now = new Date();
     const expireAt = now.setMinutes(now.getMinutes() + +expireTimeMinutes);
-    console.log('expireAt', expireAt);
     return new Date(expireAt).getTime();
   }
 
-  pickBestResult(simulationResults: SimulationResults[]) {
+  pickBestResult(simulationResults: SimulationResult[]) {
     return simulationResults.reduce((acc, current) => {
       if (!acc || current.interestRate < acc.interestRate) {
         return current;
@@ -84,46 +86,69 @@ export class ReplyService {
     }
   }
 
+  isExpired(expireAt) {
+    return Date.now() > expireAt;
+  }
+
   monitorExpirationTime(correlationId) {
-    setInterval(() => {
+    const intervalId = setInterval(() => {
       const pendingRequest = this.pendingRequests.get(correlationId);
 
       if (pendingRequest) {
         const { expireTime } = pendingRequest;
-        const now = Date.now();
-        if (now > expireTime) {
+        if (
+          this.isExpired(expireTime)
+          // || pendingRequest.exceptedResults !== pendingRequest.receivedResults
+        ) {
           this.logger.warn(
             `Waiting time for correlationId ${correlationId} has expired...picking the best result`,
           );
+          pendingRequest.isExpired = true;
+          const results = this.getBestResult(correlationId);
+          clearInterval(intervalId);
+          pendingRequest.resolve(results);
         }
       }
-    }, 1000);
+    }, 10000);
+
+    return intervalId;
   }
 
-  async handleResponse(correlationId: string, data: any, resolver: any) {
-    console.log('handle response called');
-    if (resolver) {
-      console.log('i got the response for correlationId', correlationId);
-      console.log(data);
+  handleResponse(
+    correlationId: string,
+    data: any,
+    resolver: PendingSimulation,
+  ) {
+    try {
+      if (resolver) {
+        this.addSimulationResult(correlationId, data);
 
-      resolver.resolve(data);
+        if (
+          resolver.exceptedResults === resolver.receivedResults &&
+          !resolver.isExpired
+        ) {
+          const bestResults = this.getBestResult(correlationId);
 
-      this.pendingRequests.delete(correlationId);
-    } else {
-      this.logger.error(
-        `No pending request found for correlation ID: ${correlationId}`,
-      );
+          resolver.resolve(bestResults);
+          this.pendingRequests.delete(correlationId);
+          return;
+        }
+      } else {
+        this.logger.error(
+          `No pending request found for correlation ID: ${correlationId}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error('error occured heere', error);
+      resolver.reject('Exception occured');
     }
   }
 
-  // Method to handle errors
   handleResponseError(correlationId: string, error: any): void {
     const resolver = this.pendingRequests.get(correlationId);
     if (resolver) {
-      // Reject the corresponding promise with the error
       resolver.reject(error);
 
-      // Remove the resolver from the map
       this.pendingRequests.delete(correlationId);
     } else {
       this.logger.error(
@@ -132,12 +157,46 @@ export class ReplyService {
     }
   }
 
-  // Implement setPendingResult to store the result in the pendingResults map
-  async setPendingResult(correlationId: string, result: any) {
-    console.log('corid received', correlationId);
+  addSimulationResult(correlationId: string, result: SimulationResult) {
+    const pendingRequest = this.pendingRequests.get(correlationId);
+
+    if (pendingRequest.isExpired) {
+      this.logger.warn(
+        `CorrelationId ${correlationId} is expired... cannot add results`,
+      );
+      return;
+    }
+
+    if (pendingRequest.receivedResults < pendingRequest.exceptedResults) {
+      pendingRequest.receivedResults = pendingRequest.receivedResults + 1;
+      this.logger.log(`Increased excepted results with 1 unit`);
+    } else {
+      this.logger.error(
+        `CorrelationId ${correlationId} received more responses than expected: pendingRequest.exceptedResults + 1`,
+      );
+    }
+
+    const intervalId = this.monitorExpirationTime(correlationId);
+    pendingRequest.simulationResults.push(result);
+
+    if (pendingRequest.exceptedResults === pendingRequest.receivedResults) {
+      this.logger.log(
+        `CID ${correlationId} received all the responses...reply to the client`,
+      );
+      clearInterval(intervalId);
+
+      const bestResults = this.getBestResult(correlationId);
+
+      pendingRequest.resolve(bestResults);
+      this.pendingRequests.delete(correlationId);
+      return;
+    }
+  }
+
+  setPendingResult(correlationId: string, result: any) {
     const resolver = this.pendingRequests.get(correlationId);
     if (resolver) {
-      await this.handleResponse(correlationId, result, resolver);
+      this.handleResponse(correlationId, result, resolver);
     } else {
       this.logger.error(
         `No pending request found for correlation ID: ${correlationId}`,
