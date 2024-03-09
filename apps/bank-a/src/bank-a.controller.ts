@@ -37,7 +37,6 @@ export class BankAController {
     @Payload() data: any,
     @Ctx() context: RmqContext,
   ) {
-    this.logger.log('BRD RECEIVED MESSAGE');
     try {
       const parsedSimulationRequest = JSON.parse(data) as SimulationDTO;
 
@@ -59,7 +58,7 @@ export class BankAController {
       );
 
       this.logger.log(
-        `Successfully simulated for correlationId ${parsedSimulationRequest.correlationId}`,
+        `BRD Successfully simulated for correlationId ${parsedSimulationRequest.correlationId}`,
       );
       this.rmqService.ack(context);
     } catch (error) {

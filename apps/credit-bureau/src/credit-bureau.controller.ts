@@ -53,7 +53,8 @@ export class CreditBureauController {
     @Ctx() context: RmqContext,
   ) {
     try {
-      const parsedData = JSON.parse(data) as unknown as CreditBureauRequestType;
+      const parsedData = JSON.parse(data) as CreditBureauRequestType;
+      console.log('parsedData', parsedData);
       const { SSN, correlationId } = parsedData ?? {};
 
       if (!SSN) {
