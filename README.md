@@ -12,7 +12,9 @@ This repo contains a microservices API built with NestJS, RabbitMQ and Docker of
 
 The Loan Broker interacts with the Credit Bureau and with different Banks.
 
-After retrieving **the credit score** from Credit Bureau, the **Loan Broker** requests a loan simulation on each bank by publishing the message to the appropiate **Bank Queue**.
+After retrieving **the credit score** from Credit Bureau, the **Loan Broker** requests a loan simulation on each bank by publishing the message to the appropiate **Bank Queue**. From that point, each bank
+has 1 minute to reply with a loan simulation. After receiving all the expected responses (in that case 3) or after the expire time is exceeded, the **Loan Broker** aggregates the responses from each bank using
+the correlationId and replies back to the client with the best quotation received.
 
 ## 🚀 Running the app
 
