@@ -102,6 +102,9 @@ export class LoanQuotesController {
       this.btClient.emit('queue.sim.bt', JSON.stringify(parsedCBResult));
       this.ingClient.emit('queue.sim.ing', JSON.stringify(parsedCBResult));
 
+      this.replyService.setExpireTime(parsedCBResult.correlationId);
+      console.log('successfully set the expire time');
+
       this.rmqService.ack(context);
     } catch (error) {
       this.logger.error(
