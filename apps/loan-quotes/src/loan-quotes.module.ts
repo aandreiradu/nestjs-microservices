@@ -32,9 +32,8 @@ import { ReplyService } from '@app/common/rmq/replyService';
     RmqModule.register({ name: LOAN_SIM_REQ_BT }),
     RmqModule.register({ name: LOAN_SIM_REQ_ING }),
     RmqModule.register({ name: BANKS_SIMULATION_RESPONSES }),
-    ReplyService,
   ],
   controllers: [LoanQuotesController],
-  providers: [LoanQuotesService],
+  providers: [LoanQuotesService, ReplyService],
 })
 export class LoanQuotesModule {}

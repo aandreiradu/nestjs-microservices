@@ -10,7 +10,7 @@ type SimulationResult = {
 };
 
 interface PendingSimulation {
-  expireTime?: number;
+  expireTime: number;
   exceptedResults: number;
   receivedResults: number;
   isExpired: boolean;
@@ -28,27 +28,20 @@ export class ReplyService {
   constructor(private readonly configService: ConfigService) {}
 
   async waitForReply(correlationId: string, SSN: string): Promise<any> {
+    const expireAt = this.getExpireTime();
+
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(correlationId, {
         resolve,
         reject,
         SSN,
         isExpired: false,
+        expireTime: expireAt,
         exceptedResults: 3,
         receivedResults: 0,
         simulationResults: [],
       });
     });
-  }
-
-  setExpireTime(correlationId: string) {
-    const expireAt = this.getExpireTime();
-
-    const pendingRequest = this.pendingRequests.get(correlationId);
-
-    if (pendingRequest) {
-      pendingRequest.expireTime = expireAt;
-    }
   }
 
   getExpireTime() {
